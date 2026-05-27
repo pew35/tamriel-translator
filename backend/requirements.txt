@@ -1,0 +1,6 @@
+fastapi：写后端 API
+uvicorn：启动后端服务
+python-multipart：让 API 能接收上传图片
+python-dotenv：读取 .env 里的 API key
+openai：调用 OpenAI API
+pydantic：定义返回 JSON 格式
