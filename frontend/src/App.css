@@ -206,6 +206,7 @@
   color: white;
   font-size: 13px;
   line-height: 1.4;
+  -webkit-app-region: no-drag;
 }
 
 .close-result-btn {

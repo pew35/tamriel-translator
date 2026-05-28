@@ -2,38 +2,45 @@
   box-sizing: border-box;
 }
 
+html,
+#root {
+  background: transparent;
+}
+
 body {
   margin: 0;
   background: transparent;
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
 }
 
 .app-root {
   min-height: 100vh;
   display: flex;
   align-items: flex-start;
-  justify-content: flex-end;
-  padding: 24px;
+  justify-content: flex-start;
+  padding: 0;
   background: transparent;
+  pointer-events: none;
 }
 
 .translator-box {
   display: flex;
   flex-direction: column;
-  width: 320px;
+  width: 100vw;
   min-height: 64px;
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(4px);
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
 }
 
 .translator-box:hover,
 .translator-box:focus-within {
-  background: rgba(0, 0, 0, 0.55);
   border-color: rgba(255, 255, 255, 0.75);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .translator-input {
@@ -48,6 +55,7 @@ body {
   color: white;
   font-size: 14px;
   line-height: 1.4;
+  -webkit-app-region: no-drag;
 }
 
 .translator-input::placeholder {
@@ -61,6 +69,7 @@ body {
   justify-content: space-between;
   gap: 6px;
   padding: 0 8px 8px;
+  -webkit-app-region: no-drag;
 }
 
 .lang-btn {
@@ -109,4 +118,57 @@ body {
   line-height: 1;
   padding: 0;
   transition: all 0.15s ease;
+}
+
+.window-controls {
+  order: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 6px 0;
+  -webkit-app-region: no-drag;
+}
+
+.drag-handle {
+  width: 18px;
+  height: 18px;
+  margin-right: auto;
+  border-radius: 6px;
+  cursor: move;
+  -webkit-app-region: drag;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 1px, transparent 1.5px)
+      0 0 / 6px 6px;
+  opacity: 0.75;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.window-control-btn {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+}
+
+.window-control-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+.close-window-btn:hover {
+  background: rgba(210, 54, 54, 0.72);
+  border-color: rgba(255, 255, 255, 0.4);
 }

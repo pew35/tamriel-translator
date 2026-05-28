@@ -14,8 +14,10 @@ from prompts import build_translation_prompt
 
 from sqlalchemy.orm import Session
 
-from database import get_db
+from database import Base, SessionLocal, engine, get_db
+from glossary_models import GlossaryTerm
 from glossary_service import lookup_glossary_matches_by_candidates
+from import_lang_glossary import import_glossary
 
 
 SKIP_GLOSSARY_CATEGORIES = {"abbreviation", "role"}
@@ -58,6 +60,21 @@ client = OpenAI(api_key=OPENAI_API_KEY, timeout=25.0)
 
 # 2. Create FastAPI app
 app = FastAPI(title="Tamriel Translator API")
+
+
+@app.on_event("startup")
+def prepare_glossary_database():
+    Base.metadata.create_all(bind=engine)
+
+    db = SessionLocal()
+
+    try:
+        has_glossary = db.query(GlossaryTerm.id).first() is not None
+    finally:
+        db.close()
+
+    if not has_glossary:
+        import_glossary()
 
 
 # 3. Allow frontend to call backend later
@@ -229,7 +246,7 @@ def build_replacement_from_matches(matches: list[dict], direction: str) -> str:
 
 
 def clean_glossary_value(value: str) -> str:
-    return value.replace("Dungeon:", "").replace("åœ°ç‰¢ï¼š", "").strip()
+    return value.strip()
 
 
 def build_replacement_option(

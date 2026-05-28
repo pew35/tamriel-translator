@@ -93,6 +93,52 @@ def build_variants(text: str) -> set[str]:
     return variants
 
 
+def ranges_overlap(first: tuple[int, int], second: tuple[int, int]) -> bool:
+    return first[0] < second[1] and second[0] < first[1]
+
+
+def choose_maximal_matches(matches: list[dict], limit: int) -> list[dict]:
+    ordered_matches = sorted(
+        matches,
+        key=lambda match: (
+            -(match["end"] - match["start"]),
+            -match["score"],
+            match["start"],
+        ),
+    )
+
+    accepted = []
+    occupied_ranges: list[tuple[int, int]] = []
+    seen_terms = set()
+
+    for match in ordered_matches:
+        match_range = (match["start"], match["end"])
+        term_key = (match["zh"], match["en"])
+
+        if term_key in seen_terms:
+            continue
+
+        if any(ranges_overlap(match_range, occupied) for occupied in occupied_ranges):
+            continue
+
+        accepted.append(match)
+        occupied_ranges.append(match_range)
+        seen_terms.add(term_key)
+
+        if len(accepted) >= limit:
+            break
+
+    accepted.sort(key=lambda match: (match["candidate_index"], match["start"]))
+
+    return [
+        {
+            "zh": match["zh"],
+            "en": match["en"],
+        }
+        for match in accepted
+    ]
+
+
 def lookup_glossary_matches_by_candidates(
     db: Session,
     candidates: list[str],
@@ -103,7 +149,7 @@ def lookup_glossary_matches_by_candidates(
 
     normalized_candidates = []
 
-    for candidate in candidates:
+    for candidate_index, candidate in enumerate(candidates):
         for variant in build_variants(candidate):
             candidate_norm = normalize_text(variant)
 
@@ -111,15 +157,20 @@ def lookup_glossary_matches_by_candidates(
                 len(candidate_norm) >= 2
                 and candidate_norm not in GENERIC_CANDIDATE_TERMS
             ):
-                normalized_candidates.append(candidate_norm)
+                normalized_candidates.append(
+                    {
+                        "index": candidate_index,
+                        "norm": candidate_norm,
+                    }
+                )
 
     if not normalized_candidates:
         return []
 
     terms = db.query(GlossaryTerm).all()
 
-    matches = []
-    seen = set()
+    possible_matches = []
+    seen_possible = set()
 
     for term in terms:
         term_variants = set()
@@ -132,26 +183,34 @@ def lookup_glossary_matches_by_candidates(
             if len(term_norm) < 2:
                 continue
 
-            for candidate_norm in normalized_candidates:
+            for candidate in normalized_candidates:
+                candidate_norm = candidate["norm"]
+                match_start = candidate_norm.find(term_norm)
                 exact_match = candidate_norm == term_norm
-                candidate_is_partial = candidate_norm in term_norm
-                term_is_partial = term_norm in candidate_norm
+                term_is_partial = match_start != -1
 
-                if exact_match or candidate_is_partial or term_is_partial:
-                    key = (term.zh, term.en)
+                if exact_match or term_is_partial:
+                    key = (
+                        candidate["index"],
+                        match_start,
+                        match_start + len(term_norm),
+                        term.zh,
+                        term.en,
+                    )
 
-                    if key not in seen:
-                        matches.append(
+                    if key not in seen_possible:
+                        possible_matches.append(
                             {
+                                "candidate_index": candidate["index"],
+                                "start": match_start,
+                                "end": match_start + len(term_norm),
+                                "score": 2 if exact_match else 1,
                                 "zh": term.zh,
                                 "en": term.en,
                             }
                         )
-                        seen.add(key)
+                        seen_possible.add(key)
 
                     break
 
-            if len(matches) >= limit:
-                return matches
-
-    return matches
+    return choose_maximal_matches(possible_matches, limit)

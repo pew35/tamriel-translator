@@ -1,7 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const DEFAULT_CLOUD_API_BASE_URL = "https://tamriel-translator-api.onrender.com";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.PROD ? DEFAULT_CLOUD_API_BASE_URL : "/api");
 
 type Direction = "zh_to_en" | "en_to_zh";
 
@@ -26,6 +29,50 @@ type TranslationInputType = "text" | "screenshot";
 type TranslationResponse = {
   inputType: TranslationInputType;
   messages?: ChatMessage[];
+};
+
+declare global {
+  interface Window {
+    desktopWindow?: {
+      minimize: () => Promise<void>;
+      close: () => Promise<void>;
+      readClipboardImage: () => string | null;
+      setIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
+      setContentHeight: (height: number) => Promise<void>;
+    };
+  }
+}
+
+const dataUrlToFile = async (
+  dataUrl: string,
+  filename = "clipboard-screenshot.png",
+) => {
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+
+  return new File([blob], filename, { type: blob.type || "image/png" });
+};
+
+const getImageFileFromClipboardData = (clipboardData: DataTransfer) => {
+  const file = Array.from(clipboardData.files).find((item) =>
+    item.type.startsWith("image/"),
+  );
+
+  if (file) return file;
+
+  const imageItem = Array.from(clipboardData.items).find((item) =>
+    item.type.startsWith("image/"),
+  );
+
+  return imageItem?.getAsFile() ?? null;
+};
+
+const isEditableTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+
+  return Boolean(
+    target.closest("input, textarea, select, [contenteditable='true']"),
+  );
 };
 
 const findFirstCaseInsensitiveSpan = (text: string, needle: string) => {
@@ -101,6 +148,7 @@ function App() {
   const isComposingRef = useRef(false);
   const requestControllerRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const translatorBoxRef = useRef<HTMLDivElement | null>(null);
   const [text, setText] = useState("");
   const [direction, setDirection] = useState<Direction>("zh_to_en");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -115,6 +163,31 @@ function App() {
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
     "idle",
   );
+
+  useEffect(() => {
+    if (!window.desktopWindow || !translatorBoxRef.current) {
+      return;
+    }
+
+    const updateWindowHeight = () => {
+      if (!translatorBoxRef.current) {
+        return;
+      }
+
+      window.desktopWindow?.setContentHeight(
+        translatorBoxRef.current.scrollHeight,
+      );
+    };
+
+    updateWindowHeight();
+
+    const resizeObserver = new ResizeObserver(updateWindowHeight);
+    resizeObserver.observe(translatorBoxRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [messages, loading, errorMessage, notesOpen, outputText]);
 
   const toggleDirection = () => {
     setDirection((prev) => (prev === "zh_to_en" ? "en_to_zh" : "zh_to_en"));
@@ -245,6 +318,37 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    const handleClipboardShortcut = async (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      const isClipboardShortcut = event.ctrlKey || event.metaKey;
+      const supportsImageShortcut = key === "v" || key === "c";
+
+      if (!isClipboardShortcut || !supportsImageShortcut) {
+        return;
+      }
+
+      if (key === "c" && isEditableTarget(event.target)) {
+        return;
+      }
+
+      const dataUrl = window.desktopWindow?.readClipboardImage?.();
+
+      if (!dataUrl) {
+        return;
+      }
+
+      event.preventDefault();
+      await translateScreenshot(await dataUrlToFile(dataUrl));
+    };
+
+    window.addEventListener("keydown", handleClipboardShortcut);
+
+    return () => {
+      window.removeEventListener("keydown", handleClipboardShortcut);
+    };
+  }, [direction]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (isComposingRef.current || e.nativeEvent.isComposing) {
       return;
@@ -263,6 +367,15 @@ function App() {
 
     translateScreenshot(file);
     e.target.value = "";
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const file = getImageFileFromClipboardData(e.clipboardData);
+
+    if (!file) return;
+
+    e.preventDefault();
+    translateScreenshot(file);
   };
 
   const copyResult = async () => {
@@ -335,10 +448,33 @@ function App() {
     groups[option.translatedMention].push(option);
     return groups;
   }, {});
+  const isDesktopApp = Boolean(window.desktopWindow);
 
   return (
     <div className="app-root">
-      <div className="translator-box">
+      <div className="translator-box" ref={translatorBoxRef}>
+        {isDesktopApp && (
+          <div className="window-controls">
+            <div aria-label="Drag window" className="drag-handle" title="Drag" />
+            <button
+              aria-label="Minimize window"
+              className="window-control-btn"
+              onClick={() => window.desktopWindow?.minimize()}
+              type="button"
+            >
+              -
+            </button>
+            <button
+              aria-label="Close app"
+              className="window-control-btn close-window-btn"
+              onClick={() => window.desktopWindow?.close()}
+              type="button"
+            >
+              X
+            </button>
+          </div>
+        )}
+
         <div className="input-controls">
           <button
             aria-label="Switch translation direction"
@@ -380,6 +516,7 @@ function App() {
             isComposingRef.current = true;
           }}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
         />
 
         {loading && <div className="status-text">Translating...</div>}

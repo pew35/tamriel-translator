@@ -7,8 +7,31 @@ from glossary_models import GlossaryTerm
 
 Base.metadata.create_all(bind=engine)
 
-EN_FILE = Path("glossary_data/en.lang.csv")
-ZH_FILE = Path("glossary_data/zh.lang.csv")
+BASE_DIR = Path(__file__).resolve().parent
+EN_FILE = BASE_DIR / "glossary_data" / "en.lang.csv"
+ZH_FILE = BASE_DIR / "glossary_data" / "zh.lang.csv"
+
+GLOSSARY_PREFIXES = {
+    "Dungeon:": "dungeon",
+    "Trial:": "trial",
+    "Zone:": "zone",
+    "Item:": "item",
+    "地牢：": "dungeon",
+    "地下城：": "dungeon",
+    "试炼：": "trial",
+    "区域：": "zone",
+    "物品：": "item",
+}
+
+
+def clean_glossary_text(text: str) -> tuple[str, str | None]:
+    cleaned = text.strip()
+
+    for prefix, category in GLOSSARY_PREFIXES.items():
+        if cleaned.startswith(prefix):
+            return cleaned.removeprefix(prefix).strip(), category
+
+    return cleaned, None
 
 
 def load_lang_file(path: Path) -> dict[tuple[str, str, str], str]:
@@ -60,6 +83,10 @@ def import_glossary():
                 skipped += 1
                 continue
 
+            en_text, en_category = clean_glossary_text(en_text)
+            zh_text, zh_category = clean_glossary_text(zh_text)
+            category = en_category or zh_category or "eso_term"
+
             existing = (
                 db.query(GlossaryTerm)
                 .filter(
@@ -73,6 +100,7 @@ def import_glossary():
             if existing:
                 existing.en = en_text
                 existing.zh = zh_text
+                existing.category = category
                 updated += 1
             else:
                 term = GlossaryTerm(
@@ -81,7 +109,7 @@ def import_glossary():
                     lang_index=lang_index,
                     en=en_text,
                     zh=zh_text,
-                    category="eso_term",
+                    category=category,
                 )
                 db.add(term)
                 inserted += 1

@@ -45,7 +45,7 @@ Task:
 
 Named term translation rules:
 - If an English named term has no known Chinese ESO translation, keep the English term in translation/copyText, but add a short Chinese literal meaning in notes.
-- Example: "Wrath of the Order" can remain "Wrath of the Order" in the sentence, but notes should include "Wrath of the Order ç›´è¯‘ä¸ºã€Œç§©åºä¹‹æ€’ã€ï¼Œæœªç¡®è®¤å®˜æ–¹ä¸­æ–‡åã€‚"
+- Example: "Wrath of the Order" can remain "Wrath of the Order" in the sentence, but notes should include "Wrath of the Order 直译为「秩序之怒」，未确认官方中文名。"
 - Do not leave a likely named term unexplained when translating English to Chinese.
 - Do not invent an official Chinese name. Clearly mark literal translations as literal.
 

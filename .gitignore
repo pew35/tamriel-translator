@@ -4,5 +4,6 @@ __pycache__/
 *.pyc
 venv/
 node_modules/
+frontend/release/
 .DS_Store
 backend/tamriel_translator.db
