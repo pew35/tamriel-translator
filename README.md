@@ -106,7 +106,13 @@ npm install
 
 The API key belongs in the backend only. Never place it in frontend code, an Electron package, or a Git commit.
 
-Create `backend/.env`:
+Create your local environment file from the example:
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+```
+
+Then edit `backend/.env`:
 
 ```text
 OPENAI_API_KEY=your_openai_api_key
