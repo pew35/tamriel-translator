@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <h1>Owner Console</h1>
+    <p>Admin-only view for account usage and estimated API cost.</p>
+    <p>Current month: <strong>{{ month_label }}</strong></p>
+  </section>
+
+  <section class="panel">
+    <h2>Accounts</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Plan</th>
+          <th>Budget</th>
+          <th>Requests</th>
+          <th>Tokens</th>
+          <th>Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in usage_rows %}
+          <tr>
+            <td>{{ row.user.username }}</td>
+            <td>{{ row.profile.role }}</td>
+            <td>{{ row.profile.plan.name }}</td>
+            <td>${{ row.profile.monthly_budget_usd }}</td>
+            <td>{{ row.request_count }}</td>
+            <td>{{ row.total_tokens }}</td>
+            <td>${{ row.estimated_cost_usd }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Recent Usage Across Users</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Type</th>
+          <th>Input</th>
+          <th>Output</th>
+          <th>Total</th>
+          <th>Cost</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in recent_records %}
+          <tr>
+            <td>{{ record.created_at }}</td>
+            <td>{{ record.user.username }}</td>
+            <td>{{ record.get_request_type_display }}</td>
+            <td>{{ record.input_tokens }}</td>
+            <td>{{ record.output_tokens }}</td>
+            <td>{{ record.total_tokens }}</td>
+            <td>${{ record.estimated_cost_usd }}</td>
+            <td>{{ record.get_status_display }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8">No usage yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

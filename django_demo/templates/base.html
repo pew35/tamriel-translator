@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tamriel Business Demo</title>
+    <style>
+      body {
+        background: #f5f1e8;
+        color: #211f1b;
+        font-family: Arial, sans-serif;
+        margin: 0;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 960px;
+        padding: 32px 20px;
+      }
+
+      a {
+        color: #5a3f92;
+      }
+
+      .panel {
+        background: #fff;
+        border: 1px solid #ddd4c4;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        padding: 20px;
+      }
+
+      .nav {
+        align-items: center;
+        background: #211f1b;
+        color: #fff;
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        padding: 12px 20px;
+      }
+
+      .nav a {
+        color: #fff;
+        margin-left: 12px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .metric {
+        background: #f8f6f1;
+        border: 1px solid #e2d9ca;
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 24px;
+        margin-top: 6px;
+      }
+
+      input,
+      select,
+      button {
+        box-sizing: border-box;
+        display: block;
+        font: inherit;
+        margin-top: 8px;
+        width: 100%;
+      }
+
+      input,
+      select {
+        border: 1px solid #cfc4b4;
+        border-radius: 6px;
+        padding: 10px;
+      }
+
+      button {
+        background: #5a3f92;
+        border: 0;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        padding: 10px 14px;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #e6ddcf;
+        padding: 10px;
+        text-align: left;
+      }
+
+      .error {
+        color: #a12d2d;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div>Tamriel Translator Business Demo</div>
+      <nav>
+        {% if user.is_authenticated %}
+          <span>{{ user.username }}</span>
+          <a href="{% url 'translator' %}">Translator</a>
+          {% if user.profile.role == "owner" or user.is_staff %}
+            <a href="{% url 'owner_console' %}">Owner Console</a>
+            <a href="{% url 'admin:index' %}">Admin</a>
+          {% endif %}
+          <a href="{% url 'logout' %}">Logout</a>
+        {% else %}
+          <a href="{% url 'login' %}">Login</a>
+          <a href="{% url 'register' %}">Create account</a>
+        {% endif %}
+      </nav>
+    </header>
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

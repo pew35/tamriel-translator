@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <h1>Mock Translator</h1>
+    <p>
+      This is the logged-in translation surface. In the real product, each
+      translation request would create a usage record silently on the backend.
+    </p>
+    <p>
+      Plan: <strong>{{ profile.plan.name }}</strong> |
+      Role: <strong>{{ profile.role }}</strong> |
+      Monthly budget: <strong>${{ profile.monthly_budget_usd }}</strong>
+    </p>
+    <p>
+      Approximate 50/50 blended monthly token limit:
+      <strong>{{ approx_token_limit }}</strong>
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Simulate Translation Usage</h2>
+    <div class="grid">
+      <form action="{% url 'mock_text_usage' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Simulate text translation</button>
+      </form>
+      <form action="{% url 'mock_screenshot_usage' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Simulate screenshot translation</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>This Month</h2>
+    <div class="grid">
+      <div class="metric">Requests<strong>{{ monthly_usage.request_count }}</strong></div>
+      <div class="metric">Input tokens<strong>{{ monthly_usage.input_tokens }}</strong></div>
+      <div class="metric">Output tokens<strong>{{ monthly_usage.output_tokens }}</strong></div>
+      <div class="metric">Total tokens<strong>{{ monthly_usage.total_tokens }}</strong></div>
+      <div class="metric">Estimated cost<strong>${{ monthly_usage.estimated_cost_usd }}</strong></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Recent Usage</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Type</th>
+          <th>Input</th>
+          <th>Output</th>
+          <th>Total</th>
+          <th>Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in recent_records %}
+          <tr>
+            <td>{{ record.created_at }}</td>
+            <td>{{ record.get_request_type_display }}</td>
+            <td>{{ record.input_tokens }}</td>
+            <td>{{ record.output_tokens }}</td>
+            <td>{{ record.total_tokens }}</td>
+            <td>${{ record.estimated_cost_usd }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6">No usage yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

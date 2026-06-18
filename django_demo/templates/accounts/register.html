@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <h1>Create Tester Account</h1>
+    <p>This demo asks for an account ID, password, and monthly API budget.</p>
+
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <label>
+        Account ID
+        <input name="username" autocomplete="username" required>
+      </label>
+      <label>
+        Password
+        <input name="password" type="password" autocomplete="new-password" required>
+      </label>
+      <label>
+        Monthly limit
+        <select name="monthly_budget_usd">
+          {% for budget in budget_choices %}
+            <option value="{{ budget }}">${{ budget }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit">Create account</button>
+    </form>
+  </section>
+{% endblock %}
